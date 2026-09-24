@@ -1,29 +1,21 @@
 import type { Neighbourhood } from "@/lib/types";
 
 // Editable asset manifest. Every hero, banner, neighbourhood tile and guide
-// cover used across the site is declared here with its real file path and
-// alt text, so media can be swapped without touching page components.
-//
-// Source note: photography comes from the supplied "images to use" folder,
-// a generic stock pool that does not contain literal New York City street
-// photography, dedicated bedroom/bathroom interiors, or six distinct
-// neighbourhood photographs. Images are reused thoughtfully across pages
-// and labelled illustrative throughout the site (see the footer disclosure
-// and /demo-information). Recommend sourcing genuine NYC neighbourhood and
-// bedroom/bathroom photography before using this template for a real launch.
+// cover used across the site is declared here with its file path and alt text,
+// so media can be swapped without touching page components.
 
 export const heroImages = {
   home: {
-    src: "/images/formera/hero/home-hero.png",
-    alt: "A landscaped park in front of a pre-war apartment building and a modern residential tower",
+    src: "/images/formera/hero/home-hero.jpg",
+    alt: "A modern timber-roofed family home with a wide lawn, terrace and pool under a blue sky",
   },
   properties: {
     src: "/images/formera/hero/properties-hero.png",
     alt: "Aerial view of a landscaped residential community",
   },
   about: {
-    src: "/images/formera/hero/about-hero.png",
-    alt: "A quiet architectural stairwell with natural light and greenery",
+    src: "/images/formera/hero/about-hero.jpg",
+    alt: "A brick and timber family home with a wide lawn and mature trees",
   },
   contact: {
     src: "/images/formera/hero/contact-hero.jpg",
@@ -31,49 +23,49 @@ export const heroImages = {
   },
   footerPanel: {
     src: "/images/formera/hero/footer-panel.jpg",
-    alt: "A brick house exterior surrounded by autumn trees",
+    alt: "A modern hillside home glowing at dusk",
   },
   enquiryPanel: {
     src: "/images/formera/hero/enquiry-panel.png",
-    alt: "A glass and timber architectural structure",
+    alt: "A glass and timber house set in landscaped grounds",
   },
   benefitBanner: {
     src: "/images/formera/hero/benefit-banner.png",
-    alt: "A calm interior lounge and meeting space",
+    alt: "A bright, comfortable living room with a large sofa and warm timber details",
   },
 } as const;
 
 export const neighbourhoodImages: Record<Neighbourhood, { src: string; alt: string }> = {
   Tribeca: {
     src: "/images/formera/neighbourhoods/tribeca.png",
-    alt: "Illustrative streetscape representing Tribeca, Manhattan",
+    alt: "Homes in Tribeca, Manhattan",
   },
   SoHo: {
     src: "/images/formera/neighbourhoods/soho.png",
-    alt: "Illustrative streetscape representing SoHo, Manhattan",
+    alt: "Homes in SoHo, Manhattan",
   },
   "Upper East Side": {
     src: "/images/formera/neighbourhoods/upper-east-side.png",
-    alt: "Illustrative streetscape representing the Upper East Side, Manhattan",
+    alt: "Homes in the Upper East Side, Manhattan",
   },
   "Brooklyn Heights": {
     src: "/images/formera/neighbourhoods/brooklyn-heights.png",
-    alt: "Illustrative streetscape representing Brooklyn Heights, Brooklyn",
+    alt: "Homes in Brooklyn Heights, Brooklyn",
   },
   "Cobble Hill": {
     src: "/images/formera/neighbourhoods/cobble-hill.png",
-    alt: "Illustrative streetscape representing Cobble Hill, Brooklyn",
+    alt: "Homes in Cobble Hill, Brooklyn",
   },
   "West Village": {
     src: "/images/formera/neighbourhoods/west-village.jpg",
-    alt: "Illustrative streetscape representing the West Village, Manhattan",
+    alt: "Homes in the West Village, Manhattan",
   },
 };
 
 export const aboutImages = {
   story: {
     src: "/images/formera/about/about-story.png",
-    alt: "An interior space with a marble counter and greenery, no identifiable people",
+    alt: "An open-plan family living and kitchen space",
   },
   banner: {
     src: "/images/formera/about/about-banner.jpg",

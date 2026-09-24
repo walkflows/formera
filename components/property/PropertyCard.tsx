@@ -29,9 +29,6 @@ export function PropertyCard({ property }: { property: Property }) {
             <SaveHeart propertyId={property.id} propertyName={property.name} size="sm" />
           </span>
         </div>
-        <span className="absolute bottom-3 left-3 z-10 rounded-full bg-ink/80 px-3 py-1 text-[11px] font-medium tracking-wide text-white">
-          Sample listing
-        </span>
         <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-center bg-gradient-to-t from-ink/40 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
           <span className="mb-4 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
             View Property

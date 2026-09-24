@@ -1,5 +1,4 @@
 import type { Faq } from "@/lib/types";
-import { WALKFLOW_CONTACT_URL } from "@/lib/config";
 
 export const faqs: Faq[] = [
   {
@@ -24,37 +23,30 @@ export const faqs: Faq[] = [
     id: 4,
     question: "How do I request a viewing?",
     answer:
-      "Open a property and select Request a Viewing. Its details will carry into the enquiry form. In this demo, you can preview the request, but nothing is sent and no appointment is booked.",
+      "Open a property and select Request a Viewing. Its details will carry into the enquiry form, where you can choose a preferred date and time. Viewings are subject to confirmation.",
   },
   {
     id: 5,
     question: "Are these properties actually available?",
     answer:
-      "No. FORMERA is a fictional website created to demonstrate WALKFLOW's web design work. The homes, prices and property details are sample content, and photographs are illustrative.",
+      "Availability can change, so every enquiry and viewing is subject to confirmation. Send an enquiry for the home you like and ask about its current status.",
   },
   {
     id: 6,
     question: "What if I haven't found a suitable home?",
     answer:
-      "Try widening your search or use Tell Us What You Need to explore the enquiry form. You can enter sample preferences and see how a more detailed enquiry would be organised.",
+      "Try widening your search or use Tell Us What You Need to share your preferred area, budget and must-have features through the enquiry form.",
   },
   {
     id: 7,
     question: "Can I ask about more than one property?",
     answer:
-      "Yes. Save the homes you like, open Saved Homes and choose Discuss These Homes. Your selected properties will appear together in the demo enquiry.",
-  },
-  {
-    id: 8,
-    question: "Can WALKFLOW build this for my real estate business?",
-    answer:
-      "WALKFLOW can discuss a website built around your listings and enquiry process, with integrations scoped around the tools you use. Use the WALKFLOW contact link to start a separate conversation about your project.",
+      "Yes. Save the homes you like, open Saved Homes and choose Discuss These Homes. Your selected properties will appear together in one enquiry.",
   },
 ];
 
 export function getFaqsByIds(ids: number[]): Faq[] {
   return ids
     .map((id) => faqs.find((f) => f.id === id))
-    .filter((f): f is Faq => Boolean(f))
-    .filter((f) => (f.id === 8 ? Boolean(WALKFLOW_CONTACT_URL) : true));
+    .filter((f): f is Faq => Boolean(f));
 }

@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// FORMERA is a fictional demo built for a WALKFLOW portfolio review, so the
-// whole site stays out of search indexes regardless of where it's deployed.
+// Kept out of search indexes while the site is unpublished.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {

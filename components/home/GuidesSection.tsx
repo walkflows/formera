@@ -3,7 +3,7 @@ import Link from "next/link";
 import { guides } from "@/lib/data/guides";
 import { Button } from "@/components/ui/Button";
 
-export function GuidesPreview() {
+export function GuidesSection() {
   return (
     <section className="container-formera py-16 md:py-24">
       <p className="text-sm font-medium uppercase tracking-wide text-ink-soft">
@@ -34,10 +34,7 @@ export function GuidesPreview() {
               />
             </div>
             <div className="flex flex-1 flex-col p-5">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-ink-soft">
-                FORMERA demo guide
-              </span>
-              <h3 className="mt-2 font-heading text-base text-ink">{guide.title}</h3>
+              <h3 className="font-heading text-base text-ink">{guide.title}</h3>
               <p className="mt-2 text-sm text-ink-soft">{guide.excerpt}</p>
             </div>
           </Link>

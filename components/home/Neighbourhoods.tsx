@@ -15,7 +15,7 @@ export function Neighbourhoods() {
         Where would you like to come home?
       </h2>
       <p className="mt-3 max-w-xl text-ink-soft">
-        Already have an area in mind? Choose a neighbourhood to see its sample homes, then narrow
+        Already have an area in mind? Choose a neighbourhood to see its homes, then narrow
         the list by price, space and features.
       </p>
 
@@ -38,10 +38,10 @@ export function Neighbourhoods() {
                 className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               />
               <div className="absolute inset-0 bg-ink/35 transition-colors duration-300 group-hover:bg-ink/45" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white">
+              <div className="on-image absolute inset-0 flex flex-col items-center justify-center text-center text-white">
                 <span className="font-heading text-lg sm:text-xl">{n}</span>
                 <span className="mt-1 text-xs text-white/85">
-                  {count} sample {count === 1 ? "home" : "homes"}
+                  {count} {count === 1 ? "home" : "homes"}
                 </span>
               </div>
             </Link>

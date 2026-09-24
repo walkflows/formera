@@ -4,6 +4,7 @@ import { Key, Compass, Tag, Home as HomeIcon } from "lucide-react";
 import { heroImages, aboutImages } from "@/lib/data/assets";
 import { getFaqsByIds } from "@/lib/data/faqs";
 import { FaqAccordion } from "@/components/ui/FaqAccordion";
+import { Testimonials } from "@/components/testimonials/Testimonials";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
@@ -66,7 +67,7 @@ export default function AboutPage() {
 
   return (
     <div>
-      <section className="relative flex min-h-[300px] items-end overflow-hidden sm:min-h-[380px]">
+      <section className="relative flex min-h-[340px] items-end overflow-hidden sm:min-h-[460px]">
         <Image
           src={heroImages.about.src}
           alt={heroImages.about.alt}
@@ -75,15 +76,16 @@ export default function AboutPage() {
           sizes="100vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-ink/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/55 to-ink/10" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent" aria-hidden="true" />
         <div className="container-formera relative py-12 text-white sm:py-16">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/80">
+          <p className="hero-copy text-xs font-semibold uppercase tracking-[0.22em] text-white/85">
             About FORMERA
           </p>
-          <h1 className="mt-3 max-w-2xl font-heading text-4xl leading-[1.05] sm:text-6xl">
+          <h1 className="hero-title mt-3 max-w-2xl text-[2.1rem] sm:text-5xl lg:text-6xl">
             Good property decisions start with being heard.
           </h1>
-          <p className="mt-4 max-w-lg text-white/85">
+          <p className="hero-copy mt-4 max-w-lg text-base text-white/90 sm:text-lg">
             Your priorities deserve more attention than a list of available homes.
           </p>
         </div>
@@ -167,7 +169,7 @@ export default function AboutPage() {
             className="h-[280px] w-full object-cover sm:h-[340px]"
           />
           <div className="absolute inset-0 bg-ink/60" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
+          <div className="on-image absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
             <h2 className="max-w-lg font-heading text-2xl sm:text-3xl">
               You don&apos;t need every answer before you begin.
             </h2>
@@ -181,6 +183,8 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      <Testimonials headingId="about-testimonials-heading" />
 
       <section className="container-formera pb-16 md:pb-24">
         <h2 className="font-heading text-2xl text-ink sm:text-3xl">Good questions</h2>

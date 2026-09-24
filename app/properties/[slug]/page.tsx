@@ -11,6 +11,7 @@ import { Gallery } from "@/components/property/Gallery";
 import { SaveShareActions } from "@/components/property/SaveShareActions";
 import { StickyEnquiryCard } from "@/components/property/StickyEnquiryCard";
 import { MobileViewingBar } from "@/components/property/MobileViewingBar";
+import { Testimonials } from "@/components/testimonials/Testimonials";
 import { RelatedProperties } from "@/components/property/RelatedProperties";
 import { Button } from "@/components/ui/Button";
 
@@ -74,7 +75,7 @@ export default async function PropertyDetailPage({
       <div className="container-formera mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_340px]">
         <div>
           <span className="inline-block rounded-full bg-ink/5 px-3 py-1 text-xs font-medium text-ink">
-            {purposeLabel(property.purpose)} &middot; Sample listing
+            {purposeLabel(property.purpose)}
           </span>
           <h1 className="mt-3 font-heading text-3xl text-ink sm:text-4xl">{property.name}</h1>
           <p className="mt-1 text-ink-soft">
@@ -129,8 +130,8 @@ export default async function PropertyDetailPage({
           <section className="mt-14 rounded-panel bg-ink/5 p-6 sm:p-8">
             <h2 className="font-heading text-xl text-ink">Explore {property.neighbourhood}</h2>
             <p className="mt-2 max-w-xl text-ink-soft">
-              This sample home is presented in {property.neighbourhood}, {property.borough}.
-              Browse other demonstration listings in the area.
+              This home is in {property.neighbourhood}, {property.borough}. Browse other listings
+              in the area.
             </p>
             <Button
               href={`/properties?neighbourhood=${neighbourhoodSlug(property.neighbourhood)}`}
@@ -157,7 +158,7 @@ export default async function PropertyDetailPage({
             className="h-[260px] w-full object-cover sm:h-[320px]"
           />
           <div className="absolute inset-0 bg-ink/55" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
+          <div className="on-image absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
             <h2 className="font-heading text-2xl sm:text-3xl">
               Can you picture yourself here?
             </h2>
@@ -174,6 +175,8 @@ export default async function PropertyDetailPage({
           </div>
         </div>
       </section>
+
+      <Testimonials headingId="property-testimonials-heading" />
 
       <RelatedProperties properties={related} />
 

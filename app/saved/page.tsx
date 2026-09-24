@@ -3,7 +3,7 @@ import { SavedList } from "@/components/saved/SavedList";
 
 export const metadata: Metadata = {
   title: "Saved Homes",
-  description: "Review the sample FORMERA listings you've saved on this browser.",
+  description: "Review the FORMERA listings you've saved on this browser.",
 };
 
 export default function SavedPage() {

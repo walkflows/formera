@@ -12,7 +12,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/about",
     "/guides",
     "/contact",
-    "/demo-information",
   ];
 
   const propertyRoutes = properties.map((p) => `/properties/${p.slug}`);

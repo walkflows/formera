@@ -7,7 +7,8 @@ import { AboutIntro } from "@/components/home/AboutIntro";
 import { PriorityCards } from "@/components/home/PriorityCards";
 import { Neighbourhoods } from "@/components/home/Neighbourhoods";
 import { SearchHelpBanner } from "@/components/home/SearchHelpBanner";
-import { GuidesPreview } from "@/components/home/GuidesPreview";
+import { GuidesSection } from "@/components/home/GuidesSection";
+import { Testimonials } from "@/components/testimonials/Testimonials";
 import { EnquiryPanel } from "@/components/home/EnquiryPanel";
 
 export default function HomePage() {
@@ -22,7 +23,8 @@ export default function HomePage() {
       <PriorityCards />
       <Neighbourhoods />
       <SearchHelpBanner />
-      <GuidesPreview />
+      <GuidesSection />
+      <Testimonials />
       <EnquiryPanel />
 
       <section className="container-formera py-16 md:py-24">

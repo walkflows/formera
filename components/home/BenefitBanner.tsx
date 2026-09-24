@@ -18,33 +18,45 @@ const benefits = [
 
 export function BenefitBanner() {
   return (
-    <section className="container-formera">
-      <div className="relative overflow-hidden rounded-panel">
-        <Image
-          src={heroImages.benefitBanner.src}
-          alt={heroImages.benefitBanner.alt}
-          width={1280}
-          height={640}
-          sizes="100vw"
-          className="h-auto w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-ink/70" />
-        <div className="relative p-8 sm:p-12 lg:p-16">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">
+    <section className="container-formera py-8 md:py-12" aria-labelledby="less-guesswork-heading">
+      <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-16">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-panel lg:aspect-[5/4]">
+          <Image
+            src={heroImages.benefitBanner.src}
+            alt={heroImages.benefitBanner.alt}
+            fill
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="object-cover object-center"
+          />
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">
             Less Guesswork
           </p>
-          <h2 className="mt-3 max-w-xl font-heading text-3xl text-white sm:text-4xl">
+          <h2
+            id="less-guesswork-heading"
+            className="mt-3 max-w-lg text-3xl text-ink sm:text-4xl lg:text-5xl"
+          >
             The details that make a difference.
           </h2>
 
-          <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-3">
-            {benefits.map((b) => (
-              <div key={b.title}>
-                <h3 className="font-heading text-lg text-white">{b.title}</h3>
-                <p className="mt-2 text-sm text-white/80">{b.body}</p>
-              </div>
+          <ol className="mt-8 divide-y divide-divider border-y border-divider">
+            {benefits.map((b, i) => (
+              <li key={b.title} className="flex gap-4 py-5">
+                <span
+                  className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold/25 font-heading text-sm text-ink"
+                  aria-hidden="true"
+                >
+                  {i + 1}
+                </span>
+                <div>
+                  <h3 className="font-heading text-lg text-ink">{b.title}</h3>
+                  <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">{b.body}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </div>
     </section>

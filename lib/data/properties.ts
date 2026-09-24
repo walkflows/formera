@@ -5,8 +5,7 @@ const img = (file: string, alt: string) => ({
   alt,
 });
 
-// All data below is invented demonstration content for the FORMERA
-// portfolio demo. Prices, availability and specifications are fictional.
+// Placeholder listing data. Replace with real inventory before publishing.
 export const properties: Property[] = [
   {
     id: "F01",

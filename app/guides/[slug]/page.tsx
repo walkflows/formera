@@ -47,9 +47,6 @@ export default async function GuideDetailPage({
       </nav>
 
       <div className="mx-auto mt-6 max-w-2xl">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-ink-soft">
-          FORMERA demo guide
-        </span>
         <h1 className="mt-2 font-heading text-3xl text-ink sm:text-4xl">{guide.title}</h1>
         <p className="mt-3 text-lg text-ink-soft">{guide.excerpt}</p>
 

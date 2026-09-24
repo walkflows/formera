@@ -13,8 +13,8 @@ export const guides: Guide[] = [
     ctaLabel: "Start Your Shortlist",
     ctaHref: "/properties",
     cover: {
-      src: "/images/formera/about/guide-shortlist.jpg",
-      alt: "Architectural floor plan drawing",
+      src: "/images/formera/about/guide-shortlist.png",
+      alt: "A contemporary house with a pool and timber roof",
     },
   },
   {
@@ -46,7 +46,7 @@ export const guides: Guide[] = [
     ctaHref: "/properties",
     cover: {
       src: "/images/formera/about/guide-neighbourhood.png",
-      alt: "Sketch of a street-corner building",
+      alt: "An aerial view of a residential neighbourhood with shared gardens",
     },
   },
   {
@@ -62,7 +62,7 @@ export const guides: Guide[] = [
     ctaHref: "/saved",
     cover: {
       src: "/images/formera/about/guide-compare.png",
-      alt: "Line drawing of a building elevation",
+      alt: "A modern two-tone house with a landscaped garden",
     },
   },
 ];

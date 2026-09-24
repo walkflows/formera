@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import Link from "next/link";
 import { NEIGHBOURHOODS, getPropertyBySlug, properties } from "@/lib/data/properties";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
@@ -145,9 +144,9 @@ export function EnquiryForm({
   if (submitted) {
     return (
       <div id={id} className="rounded-panel border border-divider bg-surface p-6 sm:p-8">
-        <h2 className="font-heading text-2xl text-ink">Here&apos;s how your enquiry would appear.</h2>
+        <h2 className="font-heading text-2xl text-ink">Your enquiry summary.</h2>
         <p className="mt-2 text-sm font-medium text-deep-green">
-          This is a demonstration. No message has been sent and no viewing has been booked.
+          Enquiry sending is not switched on yet, so this has not been delivered and no viewing is booked. Enquiries and viewings are subject to confirmation.
         </p>
 
         <dl className="mt-6 space-y-3 text-sm">
@@ -194,7 +193,7 @@ export function EnquiryForm({
       className="rounded-panel border border-divider bg-surface p-6 sm:p-8"
     >
       <p className="rounded-lg bg-gold/15 px-4 py-3 text-sm text-ink">
-        Demo form: use sample details. Nothing you enter here is sent or saved.
+        Enquiry sending is not switched on yet: the details you enter stay in this browser and are not delivered. Enquiries and viewings are subject to confirmation.
       </p>
 
       {savedProperties.length > 0 ? (
@@ -394,7 +393,7 @@ export function EnquiryForm({
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <Button type="submit">
-          {isViewing ? "Preview Viewing Request" : "Preview My Enquiry"}
+          {isViewing ? "Submit Viewing Request" : "Submit Enquiry"}
         </Button>
         <button
           type="button"
@@ -405,15 +404,6 @@ export function EnquiryForm({
         </button>
       </div>
 
-      {!isCompact ? (
-        <p className="mt-6 text-xs text-ink-soft">
-          Read more about how this demo works on the{" "}
-          <Link href="/demo-information" className="underline underline-offset-2">
-            Demo Information
-          </Link>{" "}
-          page.
-        </p>
-      ) : null}
     </form>
   );
 }

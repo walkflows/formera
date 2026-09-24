@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Testimonials } from "@/components/testimonials/Testimonials";
 import { guides } from "@/lib/data/guides";
 
 export const metadata: Metadata = {
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 
 export default function GuidesPage() {
   return (
+    <>
     <div className="container-formera py-12 md:py-16">
       <h1 className="font-heading text-3xl text-ink sm:text-4xl">
         A clearer start to your next move.
@@ -36,9 +38,6 @@ export default function GuidesPage() {
               />
             </div>
             <div className="flex flex-1 flex-col p-6">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-ink-soft">
-                FORMERA demo guide
-              </span>
               <h2 className="mt-2 font-heading text-lg text-ink">{guide.title}</h2>
               <p className="mt-2 text-sm text-ink-soft">{guide.excerpt}</p>
             </div>
@@ -46,5 +45,7 @@ export default function GuidesPage() {
         ))}
       </div>
     </div>
+    <Testimonials headingId="guides-testimonials-heading" />
+    </>
   );
 }

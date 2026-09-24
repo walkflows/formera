@@ -51,7 +51,7 @@ export function PriorityCards() {
             className="h-full max-h-[520px] w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/20 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 p-7 sm:p-9">
+          <div className="on-image absolute inset-x-0 bottom-0 p-7 sm:p-9">
             <h3 className="font-heading text-2xl text-white">
               Room for the life you&apos;re planning.
             </h3>
@@ -81,7 +81,7 @@ export function PriorityCards() {
                 className="h-[220px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.025]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4">
+              <div className="on-image absolute inset-x-0 bottom-0 p-4">
                 <h3 className="font-heading text-base text-white">{card.title}</h3>
                 <p className="mt-1 text-xs text-white/80">{card.body}</p>
               </div>

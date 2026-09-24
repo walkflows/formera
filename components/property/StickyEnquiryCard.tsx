@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/format";
 import type { Property } from "@/lib/types";
@@ -22,12 +21,6 @@ export function StickyEnquiryCard({ property }: { property: Property }) {
           Ask About This Home
         </Button>
       </div>
-      <p className="mt-4 text-xs text-ink-soft">
-        Demo form — nothing you send here is sent or saved.{" "}
-        <Link href="/demo-information" className="underline underline-offset-2">
-          Learn more
-        </Link>
-      </p>
     </div>
   );
 }

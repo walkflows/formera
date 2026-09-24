@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
 import { heroImages } from "@/lib/data/assets";
 import { getFaqsByIds } from "@/lib/data/faqs";
 import { FaqAccordion } from "@/components/ui/FaqAccordion";
+import { Testimonials } from "@/components/testimonials/Testimonials";
 import { ContactPageClient } from "@/components/contact/ContactPageClient";
-import { WALKFLOW_CONTACT_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Preview a general, buying, renting or selling enquiry with FORMERA's demo form.",
+  description: "Send a general, buying, renting or selling enquiry to FORMERA.",
 };
 
 export default function ContactPage() {
@@ -29,10 +28,10 @@ export default function ContactPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-ink/10" />
         <div className="container-formera relative py-10 text-white sm:py-14">
-          <h1 className="max-w-xl font-heading text-4xl leading-[1.05] sm:text-5xl">
+          <h1 className="hero-title max-w-xl text-[2.1rem] sm:text-5xl lg:text-6xl">
             Let&apos;s talk about your next move.
           </h1>
-          <p className="mt-3 max-w-lg text-white/85">
+          <p className="hero-copy mt-3 max-w-lg text-base text-white/90 sm:text-lg">
             A home you&apos;ve saved, an area you like or a move you&apos;re still considering.
             Start there.
           </p>
@@ -54,27 +53,10 @@ export default function ContactPage() {
             </Suspense>
           </div>
 
-          <div className="mt-10 rounded-panel border border-dashed border-divider p-6">
-            <p className="font-heading text-base text-ink">Like how this works?</p>
-            <p className="mt-2 text-sm text-ink-soft">
-              WALKFLOW builds websites that help customers find what they need and take the next
-              step.
-            </p>
-            {WALKFLOW_CONTACT_URL ? (
-              <Link
-                href={WALKFLOW_CONTACT_URL}
-                className="mt-3 inline-block text-sm font-medium text-deep-green underline underline-offset-2"
-              >
-                Discuss Your Website
-              </Link>
-            ) : (
-              <p className="mt-3 text-sm text-ink-soft">
-                (WALKFLOW contact link not yet configured for this demo.)
-              </p>
-            )}
-          </div>
         </div>
       </section>
+
+      <Testimonials headingId="contact-testimonials-heading" />
 
       <section className="container-formera pb-16 md:pb-24">
         <div className="mx-auto max-w-2xl">
