@@ -5,6 +5,7 @@ import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
 import { TopBar } from "@/components/layout/TopBar";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/config";
 
 const montserrat = Montserrat({
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
           </main>
           <Footer />
+          <ChatWidget />
         </SavedPropertiesProvider>
       </body>
     </html>
