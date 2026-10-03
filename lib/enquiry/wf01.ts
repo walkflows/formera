@@ -51,16 +51,29 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // so the field is omitted rather than guessed.
 export function parseMaxBudget(text: string | undefined): number | undefined {
   if (!text) return undefined;
+
   const amounts: number[] = [];
   const re = /(\d[\d,]*(?:\.\d+)?)\s*([mk])?/gi;
+
   let match: RegExpExecArray | null;
+
   while ((match = re.exec(text)) !== null) {
     const value = Number(match[1].replace(/,/g, ""));
     if (!Number.isFinite(value)) continue;
+
     const suffix = match[2]?.toLowerCase();
-    amounts.push(suffix === "m" ? value * 1_000_000 : suffix === "k" ? value * 1_000 : value);
+
+    amounts.push(
+      suffix === "m"
+        ? value * 1_000_000
+        : suffix === "k"
+          ? value * 1_000
+          : value
+    );
   }
+
   const max = amounts.length ? Math.max(...amounts) : 0;
+
   return max > 0 ? Math.round(max) : undefined;
 }
 
