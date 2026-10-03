@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { NEIGHBOURHOODS, getPropertyBySlug, properties } from "@/lib/data/properties";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
@@ -85,6 +85,9 @@ export function EnquiryForm({
   const [values, setValues] = useState<FormValues>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const requestIdRef = useRef<string | null>(null);
   const formId = useId();
 
   const isCompact = variant === "compact";
@@ -130,12 +133,51 @@ export function EnquiryForm({
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (validate()) setSubmitted(true);
+    if (sending || !validate()) return;
+    if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID();
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await fetch("/api/enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: requestIdRef.current,
+          fullName: values.fullName,
+          email: values.email,
+          phone: values.phone,
+          intent: values.intent,
+          propertySlug: values.propertySlug,
+          neighbourhood: values.neighbourhood,
+          budget: values.budget,
+          timeframe: values.timeframe,
+          viewingDate: values.viewingDate,
+          viewingWindow: values.viewingWindow,
+          message: values.message,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; message?: string; field?: string } | null;
+      if (res.ok && data?.ok) {
+        setSubmitted(true);
+      } else {
+        const message = data?.message ?? "We couldn't send your enquiry just now. Please try again.";
+        if (data?.field) {
+          setErrors((err) => ({ ...err, [data.field as keyof FormValues]: message }));
+        } else {
+          setSendError(message);
+        }
+      }
+    } catch {
+      setSendError("We couldn't send your enquiry just now. Please check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   function handleReset() {
+    requestIdRef.current = null;
     setValues(EMPTY_VALUES);
     setErrors({});
     setSubmitted(false);
@@ -144,9 +186,9 @@ export function EnquiryForm({
   if (submitted) {
     return (
       <div id={id} className="rounded-panel border border-divider bg-surface p-6 sm:p-8">
-        <h2 className="font-heading text-2xl text-ink">Your enquiry summary.</h2>
+        <h2 className="font-heading text-2xl text-ink">Enquiry received</h2>
         <p className="mt-2 text-sm font-medium text-deep-green">
-          Enquiry sending is not switched on yet, so this has not been delivered and no viewing is booked. Enquiries and viewings are subject to confirmation.
+          Thanks for getting in touch. Your enquiry has been received. We’ll contact you by email to discuss the next step.
         </p>
 
         <dl className="mt-6 space-y-3 text-sm">
@@ -193,7 +235,7 @@ export function EnquiryForm({
       className="rounded-panel border border-divider bg-surface p-6 sm:p-8"
     >
       <p className="rounded-lg bg-gold/15 px-4 py-3 text-sm text-ink">
-        Enquiry sending is not switched on yet: the details you enter stay in this browser and are not delivered. Enquiries and viewings are subject to confirmation.
+        Your details are sent securely to our team. Enquiries and viewings are subject to confirmation.
       </p>
 
       {savedProperties.length > 0 ? (
@@ -392,8 +434,8 @@ export function EnquiryForm({
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
-        <Button type="submit">
-          {isViewing ? "Submit Viewing Request" : "Submit Enquiry"}
+        <Button type="submit" disabled={sending}>
+          {sending ? "Sending…" : isViewing ? "Submit Viewing Request" : "Submit Enquiry"}
         </Button>
         <button
           type="button"
@@ -403,6 +445,11 @@ export function EnquiryForm({
           Reset form
         </button>
       </div>
+      {sendError ? (
+        <p role="alert" className="mt-4 text-sm text-red-700">
+          {sendError}
+        </p>
+      ) : null}
 
     </form>
   );

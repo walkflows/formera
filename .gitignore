@@ -42,3 +42,4 @@ next-env.d.ts
 
 # local browser-testing screenshots (not project deliverables)
 .playwright-mcp/
+!.env.example
