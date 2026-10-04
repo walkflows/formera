@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { mapEnquiryToWf01, type EnquiryBody } from "@/lib/enquiry/wf01";
+import { createRateLimiter, clientKey } from "@/lib/rate-limit";
+import { getValidSessionId } from "@/lib/session/session";
 
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 16_000;
-const WINDOW_MS = 10 * 60 * 1000;
-const MAX_PER_WINDOW = 5;
-const hits = new Map<string, number[]>();
+const limiter = createRateLimiter({ limit: 5, windowMs: 10 * 60 * 1000 });
 
 const ALLOWED_FIELDS = new Set([
   "requestId",
@@ -16,19 +16,27 @@ const ALLOWED_FIELDS = new Set([
   "intent",
   "propertySlug",
   "neighbourhood",
-  "budget",
+  "maxBudget",
   "timeframe",
-  "viewingDate",
-  "viewingWindow",
   "message",
 ]);
 
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > MAX_PER_WINDOW;
+interface Wf01Response {
+  success?: boolean;
+  result?: unknown;
+  matches?: { name?: unknown; isAlternative?: unknown; reasons?: unknown }[];
+}
+
+// Only the fields the website needs. Assignment and agent details stay on the server.
+function sanitizeMatches(data: Wf01Response) {
+  const list = Array.isArray(data.matches) ? data.matches : [];
+  return list.slice(0, 3).map((m) => ({
+    name: typeof m.name === "string" ? m.name.slice(0, 120) : "",
+    isAlternative: m.isAlternative === true,
+    reasons: Array.isArray(m.reasons)
+      ? m.reasons.filter((r): r is string => typeof r === "string").slice(0, 5)
+      : [],
+  }));
 }
 
 function fail(status: number, message: string, field?: string) {
@@ -42,26 +50,41 @@ export async function POST(request: Request) {
     return fail(415, "Enquiries must be sent as JSON.");
   }
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
-  if (rateLimited(ip)) return fail(429, "Too many enquiries from this connection. Please try again later.");
+  const limit = limiter.check(clientKey(request));
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { ok: false, message: "Too many enquiries from this connection. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
 
+  const text = await request.text();
+  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) {
+    return fail(413, "That enquiry is too large to send.");
+  }
   let raw: unknown;
   try {
-    raw = await request.json();
+    raw = JSON.parse(text);
   } catch {
     return fail(400, "The enquiry could not be read. Please try again.");
   }
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return fail(400, "The enquiry could not be read. Please try again.");
   }
+  // The session is always taken from the server-side cookie, never from the body.
+  delete (raw as Record<string, unknown>).sessionId;
   const unexpected = Object.keys(raw).filter((k) => !ALLOWED_FIELDS.has(k));
   if (unexpected.length > 0) return fail(400, "The enquiry contains fields that are not accepted.");
 
   const url = process.env.WF01_WEBHOOK_URL;
   const secret = process.env.WF01_WEBHOOK_SECRET;
-  const sessionId = process.env.WF01_SESSION_ID;
-  if (!url || !secret || !sessionId) {
+  if (!url || !secret) {
     return fail(503, "Enquiry sending is not configured yet. Please try again later.");
+  }
+
+  const sessionId = await getValidSessionId();
+  if (!sessionId) {
+    return fail(401, "Your session has expired. Please refresh the page and try again.");
   }
 
   const mapped = mapEnquiryToWf01(raw as EnquiryBody, sessionId);
@@ -83,15 +106,15 @@ export async function POST(request: Request) {
     return fail(502, "We couldn't send your enquiry just now. Please try again.");
   }
 
-  let data: { success?: boolean; duplicate?: boolean } | null = null;
+  let data: Wf01Response | null = null;
   try {
-    data = (await upstream.json()) as { success?: boolean; duplicate?: boolean };
+    data = (await upstream.json()) as Wf01Response;
   } catch {
     data = null;
   }
 
   if (upstream.ok && data?.success === true) {
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, matches: sanitizeMatches(data) });
   }
   return fail(502, "We couldn't send your enquiry just now. Please try again.");
 }

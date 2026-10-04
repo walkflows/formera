@@ -1,26 +1,22 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { NEIGHBOURHOODS, getPropertyBySlug, properties } from "@/lib/data/properties";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 
-type IntentOption =
-  | "Buy"
-  | "Rent"
-  | "Sell"
-  | "Relocate"
-  | "Request a viewing"
-  | "Ask about a property";
+type IntentOption = "Buy" | "Rent";
 
 const INTENT_FROM_QUERY: Record<string, IntentOption> = {
   buy: "Buy",
   rent: "Rent",
-  sell: "Sell",
-  relocate: "Relocate",
-  viewing: "Request a viewing",
-  "property-question": "Ask about a property",
 };
+
+export interface SuggestedHome {
+  name: string;
+  isAlternative: boolean;
+  reasons: string[];
+}
 
 interface FormValues {
   fullName: string;
@@ -31,8 +27,6 @@ interface FormValues {
   neighbourhood: string;
   budget: string;
   timeframe: string;
-  viewingDate: string;
-  viewingWindow: string;
   message: string;
 }
 
@@ -45,10 +39,13 @@ const EMPTY_VALUES: FormValues = {
   neighbourhood: "",
   budget: "",
   timeframe: "",
-  viewingDate: "",
-  viewingWindow: "",
   message: "",
 };
+
+function isValidPhone(value: string): boolean {
+  const digits = value.replace(/D/g, "");
+  return /^[+()ds.-]+$/.test(value.trim()) && digits.length >= 7 && digits.length <= 15;
+}
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -72,8 +69,10 @@ export function EnquiryForm({
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   const initial = useMemo<FormValues>(() => {
-    const intent = defaultIntentQuery ? INTENT_FROM_QUERY[defaultIntentQuery] ?? "" : "";
     const property = defaultPropertySlug ? getPropertyBySlug(defaultPropertySlug) : undefined;
+    const fromQuery = defaultIntentQuery ? INTENT_FROM_QUERY[defaultIntentQuery] : undefined;
+    const intent: IntentOption | "" =
+      fromQuery ?? (property ? (property.purpose === "sale" ? "Buy" : "Rent") : "");
     return {
       ...EMPTY_VALUES,
       intent,
@@ -87,16 +86,25 @@ export function EnquiryForm({
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [matches, setMatches] = useState<SuggestedHome[]>([]);
+  const [sessionStatus, setSessionStatus] = useState<"starting" | "ready" | "failed">("starting");
+  const sessionStartedRef = useRef(false);
+
+  // Starts one server-side session per mounted form. The session ID stays in an
+  // HTTP-only cookie; the browser only learns whether it succeeded.
+  useEffect(() => {
+    if (sessionStartedRef.current) return;
+    sessionStartedRef.current = true;
+    fetch("/api/session", { method: "POST" })
+      .then((res) => setSessionStatus(res.ok ? "ready" : "failed"))
+      .catch(() => setSessionStatus("failed"));
+  }, []);
   const requestIdRef = useRef<string | null>(null);
   const formId = useId();
 
   const isCompact = variant === "compact";
-  const intentOptions: IntentOption[] = isCompact
-    ? ["Buy", "Rent", "Sell", "Relocate"]
-    : ["Buy", "Rent", "Sell", "Relocate", "Request a viewing", "Ask about a property"];
+  const intentOptions: IntentOption[] = ["Buy", "Rent"];
 
-  const isViewing = values.intent === "Request a viewing";
-  const isSelling = values.intent === "Sell";
   const selectedProperty = values.propertySlug ? getPropertyBySlug(values.propertySlug) : undefined;
 
   function update<K extends keyof FormValues>(key: K, value: FormValues[K]) {
@@ -110,24 +118,8 @@ export function EnquiryForm({
     if (!values.fullName.trim()) next.fullName = "Enter your name.";
     if (!isValidEmail(values.email)) next.email = "Enter a valid email address.";
     if (!values.intent) next.intent = "Choose what you need help with.";
-    if (!isCompact && values.intent === "Request a viewing" && !values.propertySlug) {
-      next.propertySlug = "Choose a property for this viewing request.";
-    }
-    if (!isCompact && values.intent === "Request a viewing" && !values.viewingDate) {
-      next.viewingDate = "Choose a future viewing date.";
-    }
-    if (!isCompact && values.intent === "Request a viewing" && values.viewingDate) {
-      const chosen = new Date(values.viewingDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (chosen < today) next.viewingDate = "Choose a future viewing date.";
-    }
-
-    const messageOptional =
-      !isCompact && values.intent === "Request a viewing" && (values.propertySlug || values.viewingDate);
-    if (!messageOptional && !values.message.trim()) {
-      next.message = "Tell us a little about your enquiry.";
-    }
+    if (values.phone.trim() && !isValidPhone(values.phone)) next.phone = "Enter a valid phone number, or leave it blank.";
+    if (values.budget.trim() && !(Number(values.budget) > 0)) next.budget = "Enter a maximum budget greater than 0, or leave it blank.";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -151,15 +143,14 @@ export function EnquiryForm({
           intent: values.intent,
           propertySlug: values.propertySlug,
           neighbourhood: values.neighbourhood,
-          budget: values.budget,
+          maxBudget: values.budget,
           timeframe: values.timeframe,
-          viewingDate: values.viewingDate,
-          viewingWindow: values.viewingWindow,
           message: values.message,
         }),
       });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; message?: string; field?: string } | null;
       if (res.ok && data?.ok) {
+        setMatches(Array.isArray((data as { matches?: SuggestedHome[] }).matches) ? (data as { matches: SuggestedHome[] }).matches : []);
         setSubmitted(true);
       } else {
         const message = data?.message ?? "We couldn't send your enquiry just now. Please try again.";
@@ -178,6 +169,7 @@ export function EnquiryForm({
 
   function handleReset() {
     requestIdRef.current = null;
+    setMatches([]);
     setValues(EMPTY_VALUES);
     setErrors({});
     setSubmitted(false);
@@ -206,16 +198,29 @@ export function EnquiryForm({
             <Row label="Properties" value={savedProperties.map((p) => p.name).join(", ")} />
           ) : null}
           {values.neighbourhood ? <Row label="Preferred neighbourhood" value={values.neighbourhood} /> : null}
-          {values.budget && !isSelling ? <Row label="Budget range" value={values.budget} /> : null}
+          {values.budget ? <Row label="Maximum budget" value={`${Number(values.budget).toLocaleString("en-US")}${values.intent === "Rent" ? " per month" : ""}`} /> : null}
           {values.timeframe ? <Row label="Timeframe" value={values.timeframe} /> : null}
-          {isViewing && values.viewingDate ? (
-            <Row
-              label="Preferred viewing"
-              value={`${values.viewingDate}${values.viewingWindow ? `, ${values.viewingWindow} (New York local time — preference only)` : ""}`}
-            />
-          ) : null}
           {values.message ? <Row label="Message" value={values.message} /> : null}
         </dl>
+
+        {matches.length > 0 ? (
+          <div className="mt-8">
+            <h3 className="font-heading text-lg text-ink">Homes that may suit you</h3>
+            <ul className="mt-3 space-y-3">
+              {matches.map((m) => (
+                <li key={m.name} className="rounded-lg border border-divider p-4">
+                  <p className="font-medium text-ink">
+                    {m.name}
+                    {m.isAlternative ? <span className="ml-2 text-xs text-ink-soft">(close alternative)</span> : null}
+                  </p>
+                  {m.reasons.length > 0 ? (
+                    <p className="mt-1 text-sm text-ink-soft">{m.reasons.join(" · ")}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button variant="outline" onClick={() => setSubmitted(false)}>
@@ -316,7 +321,6 @@ export function EnquiryForm({
             label="Selected property"
             htmlFor={`${formId}-property`}
             error={errors.propertySlug}
-            required={isViewing}
           >
             <select
               id={`${formId}-property`}
@@ -350,19 +354,23 @@ export function EnquiryForm({
           </select>
         </Field>
 
-        {!isSelling ? (
-          <Field label="Budget range" htmlFor={`${formId}-budget`}>
-            <input
-              id={`${formId}-budget`}
-              type="text"
-              placeholder={values.intent === "Rent" ? "e.g. $4,000–$6,000 / month" : "e.g. $1m–$2m"}
-              value={values.budget}
-              onChange={(e) => update("budget", e.target.value)}
-              maxLength={60}
-              className="input-field"
-            />
-          </Field>
-        ) : null}
+        <Field
+          label={values.intent === "Rent" ? "Maximum monthly rent (USD)" : "Maximum budget (USD)"}
+          htmlFor={`${formId}-budget`}
+          error={errors.budget}
+        >
+          <input
+            id={`${formId}-budget`}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            placeholder={values.intent === "Rent" ? "e.g. 5000" : "e.g. 2000000"}
+            value={values.budget}
+            onChange={(e) => update("budget", e.target.value)}
+            className="input-field"
+          />
+        </Field>
 
         {!isCompact ? (
           <Field label="Planned timeframe" htmlFor={`${formId}-timeframe`}>
@@ -381,44 +389,11 @@ export function EnquiryForm({
           </Field>
         ) : null}
 
-        {!isCompact && isViewing ? (
-          <>
-            <Field
-              label="Preferred viewing date"
-              htmlFor={`${formId}-date`}
-              error={errors.viewingDate}
-              required
-            >
-              <input
-                id={`${formId}-date`}
-                type="date"
-                min={new Date().toISOString().slice(0, 10)}
-                value={values.viewingDate}
-                onChange={(e) => update("viewingDate", e.target.value)}
-                className="input-field"
-              />
-            </Field>
-            <Field label="Time window (New York local time — preference only)" htmlFor={`${formId}-window`}>
-              <select
-                id={`${formId}-window`}
-                value={values.viewingWindow}
-                onChange={(e) => update("viewingWindow", e.target.value)}
-                className="input-field"
-              >
-                <option value="">No preference</option>
-                <option>Morning</option>
-                <option>Afternoon</option>
-                <option>Evening</option>
-              </select>
-            </Field>
-          </>
-        ) : null}
-
         <Field
           label="Your message"
           htmlFor={`${formId}-message`}
           error={errors.message}
-          required={isCompact || !isViewing}
+          required
           className="sm:col-span-2"
         >
           <textarea
@@ -434,8 +409,8 @@ export function EnquiryForm({
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
-        <Button type="submit" disabled={sending}>
-          {sending ? "Sending…" : isViewing ? "Submit Viewing Request" : "Submit Enquiry"}
+        <Button type="submit" disabled={sending || sessionStatus !== "ready"}>
+          {sending ? "Sending…" : "Submit Enquiry"}
         </Button>
         <button
           type="button"
@@ -448,6 +423,11 @@ export function EnquiryForm({
       {sendError ? (
         <p role="alert" className="mt-4 text-sm text-red-700">
           {sendError}
+        </p>
+      ) : null}
+      {sessionStatus === "failed" ? (
+        <p role="alert" className="mt-4 text-sm text-red-700">
+          We couldn&apos;t start your enquiry just now. Please refresh the page to try again.
         </p>
       ) : null}
 
