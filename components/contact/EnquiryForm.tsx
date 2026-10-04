@@ -123,7 +123,13 @@ export function EnquiryForm({
       .catch(() => setSessionStatus("failed"));
   }, []);
   const requestIdRef = useRef<string | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const formId = useId();
+
+  // Moves focus to the completion heading so keyboard and screen-reader users land on the result.
+  useEffect(() => {
+    if (submitted) headingRef.current?.focus();
+  }, [submitted]);
 
   const isCompact = variant === "compact";
   const intentOptions: IntentOption[] = ["Buy", "Rent"];
@@ -287,10 +293,29 @@ export function EnquiryForm({
   if (submitted) {
     return (
       <div id={id} className="rounded-panel border border-divider bg-surface p-6 sm:p-8">
-        <h2 className="font-heading text-2xl text-ink">Enquiry received</h2>
-        <p className="mt-2 text-sm font-medium text-deep-green">
-          Thanks for getting in touch. Your enquiry has been received. We’ll contact you by email to discuss the next step.
-        </p>
+        <div className="flex items-start gap-4">
+          <span
+            aria-hidden="true"
+            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-deep-green text-surface"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+          </span>
+          <div>
+            <h2 ref={headingRef} tabIndex={-1} className="font-heading text-2xl text-ink focus:outline-none">
+              You’re all set. Your request has been received.
+            </h2>
+            <p className="mt-2 text-sm font-medium text-deep-green">
+              Thanks for getting in touch. Your enquiry has been received. We’ll contact you by email to discuss the next step.
+            </p>
+            <p className="mt-2 text-sm text-ink-soft">
+              {viewingDone
+                ? "The agent will contact you by email to confirm your viewing."
+                : "Our property team will contact you by email about the next step."}
+            </p>
+          </div>
+        </div>
         {alreadyReceived ? (
           <p className="mt-2 text-sm text-ink-soft">
             Your enquiry has already been received. We&apos;ve kept your existing enquiry on file.
@@ -418,10 +443,10 @@ export function EnquiryForm({
         ) : null}
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => setSubmitted(false)}>
-            Edit Details
+          <Button onClick={handleReset}>Done</Button>
+          <Button variant="outline" href="/properties">
+            Explore More Properties
           </Button>
-          <Button href="/properties">Explore More Properties</Button>
         </div>
       </div>
     );
