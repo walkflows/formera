@@ -13,9 +13,18 @@ const INTENT_FROM_QUERY: Record<string, IntentOption> = {
 };
 
 export interface SuggestedHome {
+  propertyId: string;
   name: string;
+  neighbourhood: string;
+  price: number;
   isAlternative: boolean;
   reasons: string[];
+}
+
+interface ViewingDone {
+  propertyName: string;
+  date: string;
+  time: string;
 }
 
 interface FormValues {
@@ -43,8 +52,8 @@ const EMPTY_VALUES: FormValues = {
 };
 
 function isValidPhone(value: string): boolean {
-  const digits = value.replace(/D/g, "");
-  return /^[+()ds.-]+$/.test(value.trim()) && digits.length >= 7 && digits.length <= 15;
+  const digits = value.replace(/\D/g, "");
+  return /^[+()\d\s.-]+$/.test(value.trim()) && digits.length >= 7 && digits.length <= 15;
 }
 
 function isValidEmail(value: string): boolean {
@@ -87,6 +96,20 @@ export function EnquiryForm({
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [matches, setMatches] = useState<SuggestedHome[]>([]);
+  const [enquiryId, setEnquiryId] = useState<string | null>(null);
+  const [alreadyReceived, setAlreadyReceived] = useState(false);
+  const [viewingFor, setViewingFor] = useState<SuggestedHome | null>(null);
+  const [viewingDone, setViewingDone] = useState<ViewingDone | null>(null);
+  const [viewingDate, setViewingDate] = useState("");
+  const [viewingTime, setViewingTime] = useState("");
+  const [viewingNotes, setViewingNotes] = useState("");
+  const [viewingSending, setViewingSending] = useState(false);
+  const [viewingError, setViewingError] = useState<string | null>(null);
+  const viewingRequestIdRef = useRef<string | null>(null);
+  const [dateLimits] = useState(() => ({
+    min: new Date().toISOString().slice(0, 10),
+    max: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
+  }));
   const [sessionStatus, setSessionStatus] = useState<"starting" | "ready" | "failed">("starting");
   const sessionStartedRef = useRef(false);
 
@@ -119,6 +142,7 @@ export function EnquiryForm({
     if (!isValidEmail(values.email)) next.email = "Enter a valid email address.";
     if (!values.intent) next.intent = "Choose what you need help with.";
     if (values.phone.trim() && !isValidPhone(values.phone)) next.phone = "Enter a valid phone number, or leave it blank.";
+    if (!values.propertySlug && !values.neighbourhood) next.neighbourhood = "Choose a neighbourhood, or select a property.";
     if (values.budget.trim() && !(Number(values.budget) > 0)) next.budget = "Enter a maximum budget greater than 0, or leave it blank.";
 
     setErrors(next);
@@ -150,7 +174,11 @@ export function EnquiryForm({
       });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; message?: string; field?: string } | null;
       if (res.ok && data?.ok) {
-        setMatches(Array.isArray((data as { matches?: SuggestedHome[] }).matches) ? (data as { matches: SuggestedHome[] }).matches : []);
+        const d = data as { enquiryId?: string; matches?: SuggestedHome[]; duplicate?: boolean };
+        setEnquiryId(typeof d.enquiryId === "string" ? d.enquiryId : null);
+        setMatches(Array.isArray(d.matches) ? d.matches : []);
+        setAlreadyReceived(d.duplicate === true);
+        requestIdRef.current = null;
         setSubmitted(true);
       } else {
         const message = data?.message ?? "We couldn't send your enquiry just now. Please try again.";
@@ -170,9 +198,90 @@ export function EnquiryForm({
   function handleReset() {
     requestIdRef.current = null;
     setMatches([]);
+    setEnquiryId(null);
+    setAlreadyReceived(false);
+    setViewingFor(null);
+    setViewingDone(null);
+    setViewingError(null);
+    viewingRequestIdRef.current = null;
     setValues(EMPTY_VALUES);
     setErrors({});
     setSubmitted(false);
+  }
+
+  // When the enquiry was a duplicate, matches are not returned again. The property the visitor
+  // chose is the only home we can offer a viewing for, and it comes from their own form input.
+  const viewingOptions: SuggestedHome[] =
+    matches.length > 0 || !enquiryId || !selectedProperty
+      ? matches
+      : [
+          {
+            propertyId: selectedProperty.id,
+            name: selectedProperty.name,
+            neighbourhood: selectedProperty.neighbourhood,
+            price: selectedProperty.price,
+            isAlternative: false,
+            reasons: [],
+          },
+        ];
+
+  function priceLabel(price: number) {
+    return `${price.toLocaleString("en-US")}${values.intent === "Rent" ? "/month" : ""}`;
+  }
+
+  function startViewing(home: SuggestedHome) {
+    setViewingFor(home);
+    setViewingDate("");
+    setViewingTime("");
+    setViewingNotes("");
+    setViewingError(null);
+  }
+
+  async function submitViewing(e: React.FormEvent) {
+    e.preventDefault();
+    if (!enquiryId || !viewingFor || viewingSending) return;
+    if (!viewingDate || !viewingTime) {
+      setViewingError("Choose a date and time for your viewing.");
+      return;
+    }
+    if (!viewingRequestIdRef.current) viewingRequestIdRef.current = crypto.randomUUID();
+    setViewingSending(true);
+    setViewingError(null);
+    try {
+      const res = await fetch("/api/viewing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: viewingRequestIdRef.current,
+          enquiryId,
+          propertyId: viewingFor.propertyId,
+          fullName: values.fullName,
+          email: values.email,
+          phone: values.phone,
+          requestedDate: viewingDate,
+          requestedTime: viewingTime,
+          notes: viewingNotes,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; message?: string; propertyName?: string; date?: string; time?: string }
+        | null;
+      if (res.ok && data?.ok) {
+        setViewingDone({
+          propertyName: data.propertyName || viewingFor.name,
+          date: data.date || viewingDate,
+          time: data.time || viewingTime,
+        });
+        viewingRequestIdRef.current = null;
+        setViewingFor(null);
+      } else {
+        setViewingError(data?.message ?? "We couldn't complete your request right now. Please try again.");
+      }
+    } catch {
+      setViewingError("We couldn't complete your request right now. Please check your connection and try again.");
+    } finally {
+      setViewingSending(false);
+    }
   }
 
   if (submitted) {
@@ -182,6 +291,11 @@ export function EnquiryForm({
         <p className="mt-2 text-sm font-medium text-deep-green">
           Thanks for getting in touch. Your enquiry has been received. We’ll contact you by email to discuss the next step.
         </p>
+        {alreadyReceived ? (
+          <p className="mt-2 text-sm text-ink-soft">
+            Your enquiry has already been received. We&apos;ve kept your existing enquiry on file.
+          </p>
+        ) : null}
 
         <dl className="mt-6 space-y-3 text-sm">
           <Row label="Name" value={values.fullName} />
@@ -203,18 +317,99 @@ export function EnquiryForm({
           {values.message ? <Row label="Message" value={values.message} /> : null}
         </dl>
 
-        {matches.length > 0 ? (
+        {viewingDone ? (
+          <div className="mt-8 rounded-lg border border-divider p-5">
+            <h3 className="font-heading text-lg text-ink">Your viewing request has been received</h3>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between gap-4"><dt className="text-ink-soft">Property</dt><dd className="text-right text-ink">{viewingDone.propertyName}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-ink-soft">Requested date</dt><dd className="text-right text-ink">{viewingDone.date}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-ink-soft">Requested time</dt><dd className="text-right text-ink">{viewingDone.time}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-ink-soft">Status</dt><dd className="text-right font-medium text-ink">Requested</dd></div>
+            </dl>
+            <p className="mt-3 text-sm text-ink-soft">The agent will confirm the appointment.</p>
+          </div>
+        ) : null}
+
+        {viewingOptions.length > 0 && !viewingDone ? (
           <div className="mt-8">
-            <h3 className="font-heading text-lg text-ink">Homes that may suit you</h3>
+            <h3 className="font-heading text-lg text-ink">{matches.length > 0 ? "Homes that may suit you" : "Your viewing"}</h3>
             <ul className="mt-3 space-y-3">
-              {matches.map((m) => (
-                <li key={m.name} className="rounded-lg border border-divider p-4">
-                  <p className="font-medium text-ink">
-                    {m.name}
-                    {m.isAlternative ? <span className="ml-2 text-xs text-ink-soft">(close alternative)</span> : null}
-                  </p>
-                  {m.reasons.length > 0 ? (
-                    <p className="mt-1 text-sm text-ink-soft">{m.reasons.join(" · ")}</p>
+              {viewingOptions.map((m) => (
+                <li key={m.propertyId} className="rounded-lg border border-divider p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-ink">
+                        {m.name}
+                        {m.isAlternative ? <span className="ml-2 text-xs text-ink-soft">(close alternative)</span> : null}
+                      </p>
+                      <p className="mt-0.5 text-sm text-ink-soft">
+                        {m.neighbourhood}{m.price ? ` · ${priceLabel(m.price)}` : ""}
+                      </p>
+                      {m.reasons.length > 0 ? <p className="mt-1 text-sm text-ink-soft">{m.reasons.join(" · ")}</p> : null}
+                    </div>
+                    {enquiryId ? (
+                      <Button variant="outline" size="sm" onClick={() => startViewing(m)}>
+                        Request a viewing
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  {viewingFor?.propertyId === m.propertyId ? (
+                    <form onSubmit={submitViewing} noValidate className="mt-4 space-y-4 border-t border-divider pt-4">
+                      <p className="text-sm font-medium text-ink">Choose a date and time for {m.name}</p>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label className="block text-sm font-medium text-ink">
+                          Preferred date
+                          <input
+                            type="date"
+                            className="input-field mt-1.5"
+                            value={viewingDate}
+                            min={dateLimits.min}
+                            max={dateLimits.max}
+                            onChange={(e) => setViewingDate(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <label className="block text-sm font-medium text-ink">
+                          Preferred time
+                          <input
+                            type="time"
+                            step={1800}
+                            className="input-field mt-1.5"
+                            value={viewingTime}
+                            onChange={(e) => setViewingTime(e.target.value)}
+                            required
+                          />
+                        </label>
+                      </div>
+                      <label className="block text-sm font-medium text-ink">
+                        Notes (optional)
+                        <textarea
+                          className="input-field mt-1.5 resize-y"
+                          rows={3}
+                          maxLength={2000}
+                          value={viewingNotes}
+                          onChange={(e) => setViewingNotes(e.target.value)}
+                        />
+                      </label>
+                      {viewingError ? (
+                        <p role="alert" className="text-sm text-red-700">
+                          {viewingError}
+                        </p>
+                      ) : null}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button type="submit" disabled={viewingSending}>
+                          {viewingSending ? "Sending…" : "Request viewing"}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => setViewingFor(null)}
+                          className="text-sm font-medium text-ink-soft underline underline-offset-2 hover:text-ink"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
                   ) : null}
                 </li>
               ))}
@@ -286,7 +481,7 @@ export function EnquiryForm({
         </Field>
 
         {!isCompact ? (
-          <Field label="Phone number" htmlFor={`${formId}-phone`}>
+          <Field label="Phone number" htmlFor={`${formId}-phone`} error={errors.phone}>
             <input
               id={`${formId}-phone`}
               type="tel"
@@ -338,14 +533,14 @@ export function EnquiryForm({
           </Field>
         ) : null}
 
-        <Field label="Preferred neighbourhood" htmlFor={`${formId}-neighbourhood`}>
+        <Field label="Preferred neighbourhood" htmlFor={`${formId}-neighbourhood`} error={errors.neighbourhood}>
           <select
             id={`${formId}-neighbourhood`}
             value={values.neighbourhood}
             onChange={(e) => update("neighbourhood", e.target.value)}
             className="input-field"
           >
-            <option value="">I&apos;m open to suggestions</option>
+            <option value="">Choose a neighbourhood</option>
             {NEIGHBOURHOODS.map((n) => (
               <option key={n} value={n}>
                 {n}

@@ -20,11 +20,11 @@ const faqs = [
   },
   {
     q: "How do I request a viewing?",
-    a: "Open a property and choose Request a Viewing. The home is carried into the enquiry form, where you can add a preferred date and time window. Viewings are subject to confirmation.",
+    a: "Open a property and choose Request a Viewing. Send the enquiry first; then, from your matched homes, choose a date and time for a viewing. Viewings are subject to confirmation.",
   },
   {
     q: "What happens after I send an enquiry?",
-    a: "Enquiry sending is not switched on yet: details you enter stay in this browser and are not delivered. Enquiries and viewings are subject to confirmation.",
+    a: "Your enquiry is securely sent to the property team and matched with suitable properties. Enquiries and viewings are subject to confirmation.",
   },
   {
     q: "Are prices monthly or purchase prices?",

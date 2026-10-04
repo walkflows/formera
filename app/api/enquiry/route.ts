@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
-import { mapEnquiryToWf01, type EnquiryBody } from "@/lib/enquiry/wf01";
+import { findDuplicateEnquiry, type EnquiryCandidate } from "@/lib/enquiry/duplicate";
+import { mapEnquiryToMaster, type EnquiryBody } from "@/lib/enquiry/master";
+import { callMaster } from "@/lib/n8n/master";
 import { createRateLimiter, clientKey } from "@/lib/rate-limit";
+import { getServiceSupabase } from "@/lib/supabase/server";
 import { getValidSessionId } from "@/lib/session/session";
 
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 16_000;
 const limiter = createRateLimiter({ limit: 5, windowMs: 10 * 60 * 1000 });
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ALLOWED_FIELDS = new Set([
   "requestId",
@@ -21,22 +25,35 @@ const ALLOWED_FIELDS = new Set([
   "message",
 ]);
 
-interface Wf01Response {
-  success?: boolean;
-  result?: unknown;
-  matches?: { name?: unknown; isAlternative?: unknown; reasons?: unknown }[];
+export interface SuggestedHome {
+  propertyId: string;
+  name: string;
+  neighbourhood: string;
+  price: number;
+  isAlternative: boolean;
+  reasons: string[];
 }
 
-// Only the fields the website needs. Assignment and agent details stay on the server.
-function sanitizeMatches(data: Wf01Response) {
-  const list = Array.isArray(data.matches) ? data.matches : [];
-  return list.slice(0, 3).map((m) => ({
-    name: typeof m.name === "string" ? m.name.slice(0, 120) : "",
-    isAlternative: m.isAlternative === true,
-    reasons: Array.isArray(m.reasons)
-      ? m.reasons.filter((r): r is string => typeof r === "string").slice(0, 5)
-      : [],
-  }));
+// Only what the website needs. Agent, assignment and internal IDs stay on the server.
+function sanitizeMatches(list: unknown): SuggestedHome[] {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, 3).flatMap((m) => {
+    if (!m || typeof m !== "object") return [];
+    const r = m as Record<string, unknown>;
+    if (typeof r.propertyId !== "string" || typeof r.name !== "string") return [];
+    return [
+      {
+        propertyId: r.propertyId.slice(0, 32),
+        name: r.name.slice(0, 120),
+        neighbourhood: typeof r.neighbourhood === "string" ? r.neighbourhood.slice(0, 80) : "",
+        price: typeof r.price === "number" && Number.isFinite(r.price) ? r.price : 0,
+        isAlternative: r.isAlternative === true,
+        reasons: Array.isArray(r.reasons)
+          ? r.reasons.filter((x): x is string => typeof x === "string").slice(0, 5)
+          : [],
+      },
+    ];
+  });
 }
 
 function fail(status: number, message: string, field?: string) {
@@ -76,45 +93,47 @@ export async function POST(request: Request) {
   const unexpected = Object.keys(raw).filter((k) => !ALLOWED_FIELDS.has(k));
   if (unexpected.length > 0) return fail(400, "The enquiry contains fields that are not accepted.");
 
-  const url = process.env.WF01_WEBHOOK_URL;
-  const secret = process.env.WF01_WEBHOOK_SECRET;
-  if (!url || !secret) {
-    return fail(503, "Enquiry sending is not configured yet. Please try again later.");
-  }
-
   const sessionId = await getValidSessionId();
-  if (!sessionId) {
-    return fail(401, "Your session has expired. Please refresh the page and try again.");
-  }
+  if (!sessionId) return fail(401, "Your session has expired. Please refresh the page and try again.");
 
-  const mapped = mapEnquiryToWf01(raw as EnquiryBody, sessionId);
+  const mapped = mapEnquiryToMaster(raw as EnquiryBody, sessionId);
   if (!mapped.ok) return fail(400, mapped.message, mapped.field);
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-WalkFlow-Secret": secret,
-      },
-      body: JSON.stringify(mapped.payload),
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch {
-    return fail(502, "We couldn't send your enquiry just now. Please try again.");
+  // An obvious repeat from this session returns the existing enquiry. Nothing is sent to MASTER,
+  // so no enquiry, email, assignment, task or event is created. If the check itself fails, the
+  // enquiry continues and the requestId protection in MASTER still applies.
+  const supabase = getServiceSupabase();
+  if (supabase) {
+    try {
+      const candidate = mapped.payload.input as EnquiryCandidate;
+      const existingId = await findDuplicateEnquiry(supabase, sessionId, candidate);
+      if (existingId) {
+        return NextResponse.json({
+          ok: true,
+          enquiryId: existingId,
+          duplicate: true,
+          recovered: false,
+          matches: [],
+        });
+      }
+    } catch {
+      console.error("enquiry: duplicate check unavailable");
+    }
   }
 
-  let data: Wf01Response | null = null;
-  try {
-    data = (await upstream.json()) as Wf01Response;
-  } catch {
-    data = null;
+  const result = await callMaster(mapped.payload);
+  if (!result.ok) return fail(result.status, result.message);
+
+  const enquiryId = result.data.enquiryId;
+  if (typeof enquiryId !== "string" || !UUID_RE.test(enquiryId)) {
+    return fail(502, "We couldn't complete your request right now. Please try again.");
   }
 
-  if (upstream.ok && data?.success === true) {
-    return NextResponse.json({ ok: true, matches: sanitizeMatches(data) });
-  }
-  return fail(502, "We couldn't send your enquiry just now. Please try again.");
+  return NextResponse.json({
+    ok: true,
+    enquiryId,
+    duplicate: result.data.duplicate === true,
+    recovered: result.data.recovered === true,
+    matches: sanitizeMatches(result.data.matches),
+  });
 }
