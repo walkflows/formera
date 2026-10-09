@@ -11,6 +11,7 @@ const FRIENDLY: Record<string, string> = {
   PROPERTY_ENQUIRY_MISMATCH:
     "This property doesn't match the enquiry you're booking from. Please start a new enquiry for this property.",
   VIEWING_SLOT_UNAVAILABLE: "That viewing time is no longer available. Please choose another time.",
+  REQUEST_IN_PROGRESS: "Your request is still being processed. Please wait a moment and try again.",
 };
 const GENERIC = "We couldn't complete your request right now. Please try again.";
 
